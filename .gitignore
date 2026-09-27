@@ -64,7 +64,8 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
-*.ipynb
+# *.ipynb
+!colab.ipynb
 
 # Secrets
 .env.local
@@ -78,3 +79,4 @@ tmp/
 temp/
 *.tmp
 *.temp
+!colab.ipynb
