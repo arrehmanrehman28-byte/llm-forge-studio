@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  llm-forge-api:
+    build: .
+    command: python backend/server.py
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./checkpoints:/app/checkpoints
+      - ./exports:/app/exports
+      - ./scratch_models:/app/scratch_models
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  llm-forge-ui:
+    build: .
+    command: python app.py
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./checkpoints:/app/checkpoints
+      - ./exports:/app/exports
+      - ./scratch_models:/app/scratch_models
+      - ./sample_data.csv:/app/sample_data.csv
+    depends_on:
+      - llm-forge-api
+    environment:
+      - PYTHONUNBUFFERED=1
+      - API_URL=http://llm-forge-api:8000
+    restart: unless-stopped
+
+  # Optional: Ollama for testing exports
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    profiles:
+      - with-ollama
+
+volumes:
+  ollama_data:

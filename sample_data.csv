@@ -1,0 +1,7 @@
+instruction,input,output
+"Explain QLoRA","What is QLoRA?","QLoRA is an efficient fine-tuning method that quantizes a model to 4-bit and uses LoRA adapters. It allows training 7B models on 8GB VRAM with 99% performance of full fine-tuning."
+"Write Python code","Sort a list in Python","def sort_list(arr):\n    return sorted(arr)\n\n# Efficient with Timsort O(n log n)"
+"Summarize","LLM Forge Studio is a no-code platform for building LLMs with QLoRA, Flash Attention, and export to GGUF/Ollama.","LLM Forge is a fast no-code LLM factory with training, tuning, testing and exporting."
+"Chat response","Hello! How can you help?","Hi! I'm your fine-tuned assistant built with LLM Forge Studio. I was trained with QLoRA for efficiency and can run on Ollama!"
+"Explain Flash Attention","What is Flash Attention 2?","Flash Attention 2 is an optimized attention algorithm that is 2x faster and uses 50% less memory by reducing HBM reads/writes. It's essential for long context LLMs."
+"Code generation","Create a FastAPI endpoint","from fastapi import FastAPI\napp = FastAPI()\n@app.get('/generate')\ndef generate(prompt: str):\n    return {'response': f'Generated for {prompt}'}"

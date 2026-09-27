@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+.venv/
+env/
+.env
+.conda/
+
+# LLM & ML
+checkpoints/
+exports/
+scratch_models/
+*.bin
+*.safetensors
+*.gguf
+*.onnx
+*.pt
+*.pth
+models/
+tokenizer.json
+*.log
+wandb/
+mlruns/
+lightning_logs/
+
+# Gradio
+.flagged/
+.gradio/
+*.gradio/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+*.sublime-project
+*.sublime-workspace
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Secrets
+.env.local
+.env.production
+hf_token.txt
+*.key
+secrets.json
+
+# Temp
+tmp/
+temp/
+*.tmp
+*.temp
