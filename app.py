@@ -825,9 +825,9 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
     
     refresh_results_btn.click(load_results, [], [results_display, results_plot, results_json, history_json])
     
-    # Test events - ULTRA SIMPLE - COMPATIBLE WITH ALL GRADIO VERSIONS (3,4,5,6)
+    # Test events - ULTRA SIMPLE - COMPATIBLE WITH ALL GRADIO VERSIONS (3,4,5,6) - FIX TEXT DISPLAY BUG
     def chat_wrapper(message, history, temp, top_p, top_k, max_tokens, rep_penalty, model_type):
-        """Ultra simple - compatible with all Gradio versions - messages for v6, tuples for v3/4/5"""
+        """Ultra simple - compatible with all Gradio versions - fixes [{'text': ..., 'type': 'text'}] display bug"""
         # Detect Gradio version
         try:
             import gradio as gr
@@ -845,18 +845,50 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
             yield history, ""
             return
         
-        # Normalize history to internal messages format first
+        # Helper to extract text from content (handles string, list of dicts, dict)
+        def extract_text(content):
+            if isinstance(content, str):
+                return content
+            elif isinstance(content, list):
+                # Content is list like [{'text': 'Hello', 'type': 'text'}, ...]
+                texts = []
+                for item in content:
+                    if isinstance(item, dict):
+                        if 'text' in item:
+                            texts.append(str(item['text']))
+                        elif 'content' in item:
+                            texts.append(str(item['content']))
+                        else:
+                            texts.append(str(item))
+                    elif isinstance(item, str):
+                        texts.append(item)
+                    else:
+                        texts.append(str(item))
+                return " ".join(texts)
+            elif isinstance(content, dict):
+                if 'text' in content:
+                    return str(content['text'])
+                elif 'content' in content:
+                    return extract_text(content['content'])
+                else:
+                    return str(content)
+            else:
+                return str(content)
+        
+        # Normalize history to internal messages format
         clean_hist = []
         for item in history:
             try:
                 if isinstance(item, dict) and "role" in item and "content" in item:
-                    clean_hist.append({"role": str(item["role"]), "content": str(item["content"])})
+                    # Extract text from content if it's list
+                    text = extract_text(item["content"])
+                    clean_hist.append({"role": str(item["role"]), "content": text})
                 elif isinstance(item, (list, tuple)) and len(item) == 2:
                     u, a = item
                     if u:
-                        clean_hist.append({"role": "user", "content": str(u)})
+                        clean_hist.append({"role": "user", "content": extract_text(u)})
                     if a:
-                        clean_hist.append({"role": "assistant", "content": str(a)})
+                        clean_hist.append({"role": "assistant", "content": extract_text(a)})
             except:
                 continue
         history = clean_hist
@@ -896,7 +928,7 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
                 rp = 1.1
             
             for chunk in generate_response(message, {"temperature": t, "top_p": tp, "top_k": tk, "max_tokens": mtok, "repetition_penalty": rp, "model_type": mt}):
-                full_response = str(chunk)
+                full_response = extract_text(chunk)
                 # Update assistant message
                 if len(history) > 0 and history[-1]["role"] == "assistant":
                     history[-1]["content"] = full_response
@@ -905,7 +937,7 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
                 
                 # Return in correct format for Gradio version
                 if is_gradio6:
-                    # Gradio 6: messages format
+                    # Gradio 6: messages format - content must be string!
                     yield history, ""
                 else:
                     # Gradio 3/4/5: tuples format
