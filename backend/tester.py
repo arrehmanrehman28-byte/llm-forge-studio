@@ -60,8 +60,50 @@ def find_best_answer(prompt: str, training_data: List[Dict]) -> str:
     if not training_data or not prompt:
         return None
     
-    prompt_lower = prompt.lower()
+    prompt_lower = prompt.lower().strip()
     prompt_words = set(prompt_lower.split())
+    
+    # Abbreviation mapping for short queries
+    abbr_map = {
+        "ai": "artificial intelligence",
+        "ml": "machine learning",
+        "dl": "deep learning",
+        "llm": "large language model",
+        "qlora": "qlora",
+        "lora": "lora",
+        "api": "api",
+        "gpu": "gpu",
+        "vram": "vram",
+        "ollama": "ollama",
+        "colab": "colab",
+    }
+    
+    # Expand abbreviations in prompt for better matching
+    expanded_prompt = prompt_lower
+    for abbr, full in abbr_map.items():
+        if abbr == prompt_lower or f"what is {abbr}" == prompt_lower or prompt_lower == f"what is {abbr}?" or abbr in prompt_words:
+            # If prompt is short like "what is ai", expand ai to artificial intelligence for matching
+            if len(prompt_words) <= 4:
+                expanded_prompt = expanded_prompt.replace(abbr, full)
+    
+    # Direct short query mapping
+    short_queries = {
+        "what is ai": "what is artificial intelligence",
+        "what is ai?": "what is artificial intelligence",
+        "ai": "what is artificial intelligence",
+        "what is ml": "what is machine learning",
+        "what is ml?": "what is machine learning",
+        "ml": "what is machine learning",
+        "what is dl": "what is deep learning",
+        "dl": "what is deep learning",
+        "what is llm": "what is large language model",
+        "llm": "what is large language model",
+    }
+    
+    # Check if prompt is short query that should map to longer
+    if prompt_lower in short_queries:
+        expanded_prompt = short_queries[prompt_lower]
+        prompt_words = set(expanded_prompt.split())
     
     best_score = 0
     best_answer = None
@@ -70,20 +112,46 @@ def find_best_answer(prompt: str, training_data: List[Dict]) -> str:
         instruction = item["instruction"].lower()
         output = item["output"]
         
+        # Exact match
         if prompt_lower.strip() == instruction.strip():
             return output
         
+        # Expanded prompt exact match
+        if expanded_prompt.strip() == instruction.strip():
+            return output
+        
+        # Contains check
         if prompt_lower in instruction or instruction in prompt_lower:
             return output
         
+        if expanded_prompt in instruction or instruction in expanded_prompt:
+            return output
+        
+        # Keyword overlap with improved scoring
         instruction_words = set(instruction.split())
         overlap = len(prompt_words & instruction_words)
-        important_words = ["what", "is", "ai", "artificial", "intelligence", "machine", "learning", "python", "llm", "forge", "qlora", "packing", "ollama", "colab", "training", "model"]
+        
+        # Bonus for important words and abbreviation expansion
+        important_words = ["what", "is", "ai", "artificial", "intelligence", "machine", "learning", "python", "llm", "large", "language", "model", "forge", "qlora", "packing", "ollama", "colab", "training", "deep"]
         for word in important_words:
             if word in prompt_lower and word in instruction:
                 overlap += 2
+            if word in expanded_prompt and word in instruction:
+                overlap += 2
+        
+        # Extra bonus for AI abbreviation
+        if "ai" in prompt_lower and ("artificial intelligence" in instruction or "artificial" in instruction):
+            overlap += 5
+        if "ml" in prompt_lower and "machine learning" in instruction:
+            overlap += 5
+        if "dl" in prompt_lower and "deep learning" in instruction:
+            overlap += 5
         
         if overlap > best_score and overlap >= 2:
+            best_score = overlap
+            best_answer = output
+        # For very short prompts like "what is ai" (3 words), lower threshold
+        elif len(prompt_words) <= 3 and overlap > best_score and overlap >= 1:
             best_score = overlap
             best_answer = output
     
@@ -95,6 +163,22 @@ def mock_generate(prompt: str, config: Dict = None) -> str:
     
     config = config or {}
     temp = config.get('temperature', 0.7)
+    
+    # Hardcoded ultra fallback for most common questions (even if CSV not found)
+    prompt_lower = prompt.lower().strip()
+    hardcoded = {
+        "what is ai": "Artificial intelligence (AI) is the simulation of human intelligence in machines. AI systems can perform tasks like recognizing speech, making decisions, translating languages, and solving problems. Examples include ChatGPT, self-driving cars, and Netflix recommendations. AI includes machine learning and deep learning. Types: Narrow AI does one task like Siri, General AI human-like, Superintelligence smarter than humans. History: 1956 Dartmouth, 1997 Deep Blue beats chess, 2016 AlphaGo beats Go, 2022 ChatGPT. Applications: Healthcare, Finance, Transportation, Entertainment. LLM Forge Studio lets you build your own AI in 5 minutes!",
+        "what is ai?": "Artificial intelligence (AI) is the simulation of human intelligence in machines. AI systems can perform tasks like recognizing speech, making decisions, translating languages, and solving problems. Examples include ChatGPT, self-driving cars, and Netflix recommendations. AI includes machine learning and deep learning. Types: Narrow AI does one task like Siri, General AI human-like, Superintelligence smarter than humans. History: 1956 Dartmouth, 1997 Deep Blue beats chess, 2016 AlphaGo beats Go, 2022 ChatGPT. Applications: Healthcare, Finance, Transportation, Entertainment. LLM Forge Studio lets you build your own AI in 5 minutes!",
+        "what is artificial intelligence": "Artificial intelligence (AI) is the simulation of human intelligence in machines. AI systems can perform tasks like recognizing speech, making decisions, translating languages, and solving problems. Examples include ChatGPT, self-driving cars, and Netflix recommendations. AI includes machine learning and deep learning. Types: Narrow AI does one task like Siri, General AI human-like, Superintelligence smarter than humans. History: 1956 Dartmouth, 1997 Deep Blue beats chess, 2016 AlphaGo beats Go, 2022 ChatGPT. Applications: Healthcare, Finance, Transportation, Entertainment. LLM Forge Studio lets you build your own AI in 5 minutes!",
+        "what is artificial intelligence?": "Artificial intelligence (AI) is the simulation of human intelligence in machines. AI systems can perform tasks like recognizing speech, making decisions, translating languages, and solving problems. Examples include ChatGPT, self-driving cars, and Netflix recommendations. AI includes machine learning and deep learning. Types: Narrow AI does one task like Siri, General AI human-like, Superintelligence smarter than humans. History: 1956 Dartmouth, 1997 Deep Blue beats chess, 2016 AlphaGo beats Go, 2022 ChatGPT. Applications: Healthcare, Finance, Transportation, Entertainment. LLM Forge Studio lets you build your own AI in 5 minutes!",
+        "what is machine learning": "Machine learning is a subset of AI where computers learn from data without being explicitly programmed. They find patterns in data and make predictions. For example, Netflix recommends movies based on what you watched before, and email spam filters learn to detect spam. Types: Supervised learning with labeled data like classification spam/not spam, regression house price. Unsupervised learning unlabeled data like clustering customer segmentation. Reinforcement learning agent learns by reward/punishment like AlphaGo self-driving. Steps: Collect data, Prepare, Choose model, Train, Evaluate, Tune, Deploy. Algorithms: Linear regression, Decision trees, Random forest, SVM, K-means, Neural networks. Metrics: Accuracy, Precision, Recall, F1. Overfitting when model memorizes training but fails on new data, fix more data fewer epochs. LLM Forge uses fine-tuning which is supervised learning!",
+        "what is ml": "Machine learning is a subset of AI where computers learn from data without being explicitly programmed. They find patterns in data and make predictions. For example, Netflix recommends movies based on what you watched before, and email spam filters learn to detect spam. Types: Supervised, Unsupervised, Reinforcement. LLM Forge uses fine-tuning which is supervised learning!",
+        "what is llm forge": "LLM Forge Studio is a no-code tool to build your own AI models in 5 minutes! You choose model like Qwen 0.5B (fastest, 1.7GB VRAM), add your data (CSV with instruction,output), click TRAIN MY AI NOW! button, wait 5 minutes on Colab Free T4 GPU, and you get your own chatbot that works with Ollama. No coding needed! GitHub: https://github.com/arrehmanrehman28-byte/llm-forge-studio - 9 tabs: Welcome, Step1 Model, From Scratch, Step2 Data, Step3 Train, Step4 Results, Step5 Chat, Step6 Export, Tune. Works on any computer!",
+        "what is llm forge studio": "LLM Forge Studio is a no-code tool to build your own AI models in 5 minutes! You choose model like Qwen 0.5B (fastest, 1.7GB VRAM), add your data (CSV with instruction,output), click TRAIN MY AI NOW! button, wait 5 minutes on Colab Free T4 GPU, and you get your own chatbot that works with Ollama. No coding needed! GitHub: https://github.com/arrehmanrehman28-byte/llm-forge-studio - 9 tabs: Welcome, Step1 Model, From Scratch, Step2 Data, Step3 Train, Step4 Results, Step5 Chat, Step6 Export, Tune. Works on any computer!",
+    }
+    
+    if prompt_lower in hardcoded:
+        return hardcoded[prompt_lower]
     
     training_data = load_training_data()
     if training_data:
