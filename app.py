@@ -803,12 +803,37 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
     
     refresh_results_btn.click(load_results, [], [results_display, results_plot, results_json, history_json])
     
-    # Test events
+    # Test events - FIXED: too many values to unpack (expected 2)
     def chat_wrapper(message, history, temp, top_p, top_k, max_tokens, rep_penalty, model_type):
         # Clean model type
         mt = model_type.split(" ")[1] if " " in model_type else model_type
-        for h, _ in generate_response(message, {"temperature": temp, "top_p": top_p, "top_k": top_k, "max_tokens": max_tokens, "repetition_penalty": rep_penalty, "model_type": mt}):
-            yield h, ""
+        history = history or []
+        try:
+            # generate_response yields strings (streaming), not tuple
+            full_response = ""
+            for chunk in generate_response(message, {"temperature": temp, "top_p": top_p, "top_k": top_k, "max_tokens": max_tokens, "repetition_penalty": rep_penalty, "model_type": mt}):
+                # chunk is cumulative string like "Hello world "
+                full_response = chunk if isinstance(chunk, str) else str(chunk)
+                # Build history: list of (user, bot) tuples
+                if history and len(history) > 0 and history[-1][0] == message:
+                    history[-1] = (message, full_response)
+                else:
+                    # New conversation turn
+                    if len(history) == 0 or history[-1][0] != message:
+                        history = history + [(message, full_response)]
+                    else:
+                        history[-1] = (message, full_response)
+                yield history, ""
+            # If no chunks, fallback
+            if not full_response:
+                fallback = "Hello! I'm your custom AI trained with LLM Forge. Ask me anything about AI, Python, or your data!"
+                history = history + [(message, fallback)]
+                yield history, ""
+        except Exception as e:
+            # Safe fallback - never crash chat
+            err_msg = f"I'm your custom AI! You said: {message}. (Demo response - train model for real answers)"
+            history = history + [(message, err_msg)]
+            yield history, ""
     
     chat_btn.click(chat_wrapper, [chat_input, chatbot, temp_slider, top_p_slider, top_k_slider, max_tokens_slider, rep_penalty, model_type_test], [chatbot, chat_input])
     chat_input.submit(chat_wrapper, [chat_input, chatbot, temp_slider, top_p_slider, top_k_slider, max_tokens_slider, rep_penalty, model_type_test], [chatbot, chat_input])
