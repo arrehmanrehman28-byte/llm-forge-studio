@@ -1,0 +1,10 @@
+instruction,output
+"YOUR INSTRUCTION HERE - What should AI do?","YOUR OUTPUT HERE - What should AI answer?"
+"Example: What is AI?","Example: AI is artificial intelligence..."
+"Example: Write a poem","Example: Roses are red, violets are blue..."
+"Replace these with your own data - 20-100 examples for good model!","Add more rows - Quality > Quantity!"
+"For chatbot: Use conversational data","For Q&A: Use question + answer"
+"For summarization: Use long text + summary","For code: Use instruction + code"
+"Tip: Clear instruction + good output = Good model!","Tip: No duplicates, no empty rows!"
+"Example Urdu: AI kya hai?","Example Urdu: AI masnoi zahanat hai..."
+"Example Code: Write function to add numbers","Example Code: def add(a,b): return a+b"
