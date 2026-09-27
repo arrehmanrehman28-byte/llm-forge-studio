@@ -1,18 +1,16 @@
-# Fixed for Colab Python 3.13 - No dependency conflicts
-# Fixes: HfFolder + Jinja2 unhashable dict + safetensors wheel
-gradio==4.44.1
-jinja2==3.1.2
-markupsafe==2.1.5
-huggingface_hub==0.25.2
+# Fixed for Colab Python 3.13 - No dependency conflicts - Gradio 5.x compatible
+gradio
+fastapi
+uvicorn
+pandas
+plotly
+python-multipart
+torch --index-url https://download.pytorch.org/whl/cu121
 transformers
 peft
 trl
 accelerate
 datasets
 safetensors
-pandas
-plotly
-fastapi
-starlette
-uvicorn
-python-multipart
+tokenizers
+huggingface-hub
