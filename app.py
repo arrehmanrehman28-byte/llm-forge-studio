@@ -665,7 +665,17 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
                 with gr.Column(scale=2):
                     gr.Markdown("### 💬 Chat With Your Custom AI!")
                     gr.HTML("<div style='font-size: 13px; color: #a1a1aa; margin-bottom: 12px;'>Your AI is ready! Ask it anything. This is YOUR AI trained on YOUR data!</div>")
-                    chatbot = gr.Chatbot(label="Your AI Chat", height=400, type="messages", value=[])
+                    # Gradio version compatibility: type="messages" for Gradio 6, no type for Gradio 3/4/5
+                    try:
+                        # Try Gradio 6+ with messages format
+                        chatbot = gr.Chatbot(label="Your AI Chat", height=400, type="messages", value=[])
+                    except TypeError:
+                        try:
+                            # Try Gradio 5 with type param but different handling
+                            chatbot = gr.Chatbot(label="Your AI Chat", height=400, value=[])
+                        except:
+                            # Fallback for very old Gradio
+                            chatbot = gr.Chatbot(label="Your AI Chat")
                     chat_input = gr.Textbox(label="💬 Type your message here", placeholder="e.g., Explain QLoRA in simple words", lines=2)
                     with gr.Row():
                         chat_btn = gr.Button("💬 Send Message", variant="primary")
@@ -808,9 +818,17 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
     
     refresh_results_btn.click(load_results, [], [results_display, results_plot, results_json, history_json])
     
-    # Test events - ULTRA SIMPLE for Gradio 6 - messages format - FINAL FIX
+    # Test events - ULTRA SIMPLE - COMPATIBLE WITH ALL GRADIO VERSIONS (3,4,5,6)
     def chat_wrapper(message, history, temp, top_p, top_k, max_tokens, rep_penalty, model_type):
-        """Ultra simple - always valid messages format for Gradio 6"""
+        """Ultra simple - compatible with all Gradio versions - messages for v6, tuples for v3/4/5"""
+        # Detect Gradio version
+        try:
+            import gradio as gr
+            gradio_version = gr.__version__
+            is_gradio6 = gradio_version.startswith("6.")
+        except:
+            is_gradio6 = False
+        
         # Clean inputs
         if history is None:
             history = []
@@ -820,7 +838,7 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
             yield history, ""
             return
         
-        # Convert old tuple format to messages if needed
+        # Normalize history to internal messages format first
         clean_hist = []
         for item in history:
             try:
@@ -877,20 +895,57 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
                     history[-1]["content"] = full_response
                 else:
                     history.append({"role": "assistant", "content": full_response})
-                yield history, ""
+                
+                # Return in correct format for Gradio version
+                if is_gradio6:
+                    # Gradio 6: messages format
+                    yield history, ""
+                else:
+                    # Gradio 3/4/5: tuples format
+                    tuple_hist = []
+                    for i in range(0, len(history), 2):
+                        if i+1 < len(history):
+                            u = history[i]["content"] if history[i]["role"] == "user" else ""
+                            a = history[i+1]["content"] if history[i+1]["role"] == "assistant" else ""
+                            if u or a:
+                                tuple_hist.append((u, a))
+                        else:
+                            if history[i]["role"] == "user":
+                                tuple_hist.append((history[i]["content"], ""))
+                    yield tuple_hist, ""
         except Exception as e:
             fallback = f"Hello! You said: {message}. I'm your custom AI from LLM Forge Studio! Ask me anything about AI, Python, or your data."
             if len(history) > 0 and history[-1]["role"] == "assistant":
                 history[-1]["content"] = fallback
             else:
                 history.append({"role": "assistant", "content": fallback})
-            yield history, ""
+            
+            if is_gradio6:
+                yield history, ""
+            else:
+                tuple_hist = []
+                for i in range(0, len(history), 2):
+                    if i+1 < len(history):
+                        u = history[i]["content"] if history[i]["role"] == "user" else ""
+                        a = history[i+1]["content"] if history[i+1]["role"] == "assistant" else ""
+                        if u or a:
+                            tuple_hist.append((u, a))
+                yield tuple_hist, ""
         
         # Ensure final response exists
         if not full_response:
             if len(history) == 0 or history[-1]["role"] != "assistant":
                 history.append({"role": "assistant", "content": "Hello! I'm your AI assistant. How can I help?"})
-                yield history, ""
+                if is_gradio6:
+                    yield history, ""
+                else:
+                    tuple_hist = []
+                    for i in range(0, len(history), 2):
+                        if i+1 < len(history):
+                            u = history[i]["content"]
+                            a = history[i+1]["content"]
+                            tuple_hist.append((u, a))
+                    yield tuple_hist, ""
     
     chat_btn.click(chat_wrapper, [chat_input, chatbot, temp_slider, top_p_slider, top_k_slider, max_tokens_slider, rep_penalty, model_type_test], [chatbot, chat_input])
     chat_input.submit(chat_wrapper, [chat_input, chatbot, temp_slider, top_p_slider, top_k_slider, max_tokens_slider, rep_penalty, model_type_test], [chatbot, chat_input])
@@ -975,4 +1030,16 @@ if __name__ == "__main__":
     print(f"🌐 {'Colab - Public link' if is_colab() else 'Local - http://localhost:7860'}")
     print("⚡ 93% VRAM saved, 1.6x faster, +6% quality, 0% data loss - Super easy!")
     print("👋 Welcome tab has 3-step guide for beginners!")
-    app.launch(server_name="0.0.0.0", server_port=7860, share=is_colab(), show_error=True, theme=gr.themes.Monochrome(), css=CSS)
+    # Gradio version compatibility: theme/css in launch for v6, in Blocks for v3/4/5
+    try:
+        # Try Gradio 6+ with theme/css in launch
+        app.launch(server_name="0.0.0.0", server_port=7860, share=is_colab(), show_error=True, theme=gr.themes.Monochrome(), css=CSS)
+    except TypeError as e:
+        print(f"⚠️ Gradio version compatibility: {e}")
+        print("Trying without theme/css (older Gradio)...")
+        try:
+            app.launch(server_name="0.0.0.0", server_port=7860, share=is_colab(), show_error=True)
+        except Exception as e2:
+            print(f"❌ Launch failed: {e2}")
+            # Ultimate fallback
+            app.launch(share=is_colab(), show_error=True)
