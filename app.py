@@ -732,7 +732,14 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
                     gr.Markdown("### ✅ Your Exported AI Files")
                     export_logs = gr.Textbox(label="What We're Doing", lines=10, autoscroll=True)
                     export_results = gr.Dataframe(label="Your Files Ready for Download", wrap=True)
-                    exports_list_btn = gr.Button("🔄 Refresh My Files", size="sm")
+                    with gr.Row():
+                        exports_list_btn = gr.Button("🔄 Refresh My Files", size="sm")
+                        gguf_download_btn = gr.DownloadButton("⬇️ Download GGUF (0.6GB) - For Ollama!", variant="primary", size="sm", visible=False)
+                    with gr.Row():
+                        modelfile_download_btn = gr.DownloadButton("⬇️ Download Modelfile - For Ollama!", variant="secondary", size="sm", visible=False)
+                        safetensors_download_btn = gr.DownloadButton("⬇️ Download SafeTensors - For Python!", variant="secondary", size="sm", visible=False)
+                    gguf_file_output = gr.File(label="📦 GGUF File - Direct Download (Click to Download!)", visible=False)
+                    gr.HTML("<div style='font-size: 11px; color: #10b981; margin-top: 8px;'>💡 After export, GGUF file will appear here for direct download! Click download button!</div>")
                     gr.HTML("""
                     <div class='card-purple' style="margin-top: 16px;">
                         <div style="font-weight: 700; margin-bottom: 8px;">🎉 How to Use Your Exported AI</div>
@@ -974,7 +981,7 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
     
     batch_btn.click(batch_wrapper, [batch_file, temp_slider, max_tokens_slider], [batch_results, batch_metrics, batch_status])
     
-    # Export events
+    # Export events - WITH DIRECT GGUF DOWNLOAD BUTTON!
     def toggle_hub(push):
         return gr.update(visible=push)
     push_hub.change(toggle_hub, [push_hub], [hub_id])
@@ -983,15 +990,99 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
         # Clean quant name
         q = gguf_quant.split(" - ")[0] if " - " in gguf_quant else gguf_quant
         if not formats:
-            return "⚠️ Please select how you want to use your AI! Recommended: GGUF Q4_K_M + Ollama", None, "", ""
+            return "⚠️ Please select how you want to use your AI! Recommended: GGUF Q4_K_M + Ollama", None, "", "", gr.update(visible=False), gr.update(visible=False), gr.update(visible=False), gr.update(visible=False)
         result = export_model({"formats": formats, "push_to_hub": push_hub, "hub_model_id": hub_id, "ollama_gguf": f"model-{q}.gguf"})
         logs = "\n".join(result['logs'])
         df = pd.DataFrame(result['results'])
         codes = generate_export_code({"formats": formats, "hub_model_id": hub_id, "ollama_gguf": f"model-{q}.gguf"})
-        return logs, df, codes['python'], codes['ollama'] + "\n\n" + codes['hf']
+        
+        # Find GGUF file for direct download
+        gguf_path = None
+        modelfile_path = None
+        safetensors_path = None
+        for r in result['results']:
+            if 'gguf' in r['format']:
+                gguf_path = r['path']
+            if r['format'] == 'ollama':
+                modelfile_path = r['path']
+            if r['format'] == 'safetensors':
+                safetensors_path = r['path']
+        
+        # If not in results, check exports folder
+        import os
+        if not gguf_path and os.path.exists("./exports"):
+            for f in os.listdir("./exports"):
+                if f.endswith(".gguf"):
+                    gguf_path = os.path.join("./exports", f)
+                    break
+        if not modelfile_path and os.path.exists("./exports/Modelfile"):
+            modelfile_path = "./exports/Modelfile"
+        if not safetensors_path and os.path.exists("./exports"):
+            for f in os.listdir("./exports"):
+                if "safetensors" in f or f.endswith(".bin"):
+                    safetensors_path = os.path.join("./exports", f)
+                    break
+        
+        # Create download button updates
+        if gguf_path and os.path.exists(gguf_path):
+            gguf_btn = gr.update(value=gguf_path, visible=True, label=f"⬇️ Download {os.path.basename(gguf_path)} - Click to Download!")
+            gguf_file = gr.update(value=gguf_path, visible=True)
+        else:
+            gguf_btn = gr.update(visible=False)
+            gguf_file = gr.update(visible=False)
+        
+        if modelfile_path and os.path.exists(modelfile_path):
+            modelfile_btn = gr.update(value=modelfile_path, visible=True)
+        else:
+            modelfile_btn = gr.update(visible=False)
+        
+        if safetensors_path and os.path.exists(safetensors_path):
+            safetensors_btn = gr.update(value=safetensors_path, visible=True)
+        else:
+            safetensors_btn = gr.update(visible=False)
+        
+        return logs, df, codes['python'], codes['ollama'] + "\n\n" + codes['hf'], gguf_btn, modelfile_btn, safetensors_btn, gguf_file
     
-    export_btn.click(export_wrapper, [export_formats, push_hub, hub_id, gguf_quant], [export_logs, export_results, export_py_code, export_ollama_code])
-    exports_list_btn.click(lambda: pd.DataFrame(list_exports()) if list_exports() else pd.DataFrame([{"file": "No files yet - Export your AI first!"}]), None, [export_results])
+    export_btn.click(export_wrapper, [export_formats, push_hub, hub_id, gguf_quant], [export_logs, export_results, export_py_code, export_ollama_code, gguf_download_btn, modelfile_download_btn, safetensors_download_btn, gguf_file_output])
+    
+    def refresh_exports():
+        import os
+        files = list_exports()
+        df = pd.DataFrame(files) if files else pd.DataFrame([{"file": "No files yet - Export your AI first!"}])
+        
+        # Check for GGUF file
+        gguf_path = None
+        modelfile_path = None
+        safetensors_path = None
+        if os.path.exists("./exports"):
+            for f in os.listdir("./exports"):
+                if f.endswith(".gguf") and not gguf_path:
+                    gguf_path = os.path.join("./exports", f)
+                if f == "Modelfile" and not modelfile_path:
+                    modelfile_path = os.path.join("./exports", f)
+                if ("safetensors" in f or f.endswith(".bin")) and not safetensors_path:
+                    safetensors_path = os.path.join("./exports", f)
+        
+        if gguf_path and os.path.exists(gguf_path):
+            gguf_btn = gr.update(value=gguf_path, visible=True, label=f"⬇️ Download {os.path.basename(gguf_path)}")
+            gguf_file = gr.update(value=gguf_path, visible=True)
+        else:
+            gguf_btn = gr.update(visible=False)
+            gguf_file = gr.update(visible=False)
+        
+        if modelfile_path and os.path.exists(modelfile_path):
+            modelfile_btn = gr.update(value=modelfile_path, visible=True)
+        else:
+            modelfile_btn = gr.update(visible=False)
+        
+        if safetensors_path and os.path.exists(safetensors_path):
+            safetensors_btn = gr.update(value=safetensors_path, visible=True)
+        else:
+            safetensors_btn = gr.update(visible=False)
+        
+        return df, gguf_btn, modelfile_btn, safetensors_btn, gguf_file
+    
+    exports_list_btn.click(refresh_exports, None, [export_results, gguf_download_btn, modelfile_download_btn, safetensors_download_btn, gguf_file_output])
     
     def refresh_gpu_fn():
         return gpu_html()
