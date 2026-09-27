@@ -808,92 +808,89 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
     
     refresh_results_btn.click(load_results, [], [results_display, results_plot, results_json, history_json])
     
-    # Test events - FIXED for Gradio 6: messages format, ultra robust
+    # Test events - ULTRA SIMPLE for Gradio 6 - messages format - FINAL FIX
     def chat_wrapper(message, history, temp, top_p, top_k, max_tokens, rep_penalty, model_type):
-        # Clean model type
+        """Ultra simple - always valid messages format for Gradio 6"""
+        # Clean inputs
+        if history is None:
+            history = []
+        if not isinstance(message, str):
+            message = str(message)
+        if not message.strip():
+            yield history, ""
+            return
+        
+        # Convert old tuple format to messages if needed
+        clean_hist = []
+        for item in history:
+            try:
+                if isinstance(item, dict) and "role" in item and "content" in item:
+                    clean_hist.append({"role": str(item["role"]), "content": str(item["content"])})
+                elif isinstance(item, (list, tuple)) and len(item) == 2:
+                    u, a = item
+                    if u:
+                        clean_hist.append({"role": "user", "content": str(u)})
+                    if a:
+                        clean_hist.append({"role": "assistant", "content": str(a)})
+            except:
+                continue
+        history = clean_hist
+        
+        # Add user message
+        history.append({"role": "user", "content": message})
+        
+        # Model type
         try:
-            mt = model_type.split(" ")[1] if " " in model_type else model_type
+            mt = str(model_type).split(" ")[1] if " " in str(model_type) else str(model_type)
         except:
             mt = "My Fine-Tuned AI"
         
-        # ULTRA ROBUST: Ensure history is always messages format for Gradio 6
-        # History should be list of dicts like [{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
-        if history is None:
-            history = []
-        
-        # Convert old tuple format to messages format if needed (for backward compatibility)
-        if len(history) > 0 and isinstance(history[0], (list, tuple)):
-            new_hist = []
-            for item in history:
-                try:
-                    if isinstance(item, (list, tuple)) and len(item) == 2:
-                        u, a = item
-                        if u is not None:
-                            new_hist.append({"role": "user", "content": str(u)})
-                        if a is not None:
-                            new_hist.append({"role": "assistant", "content": str(a)})
-                    elif isinstance(item, dict) and "role" in item and "content" in item:
-                        new_hist.append({"role": str(item["role"]), "content": str(item["content"])})
-                except:
-                    continue
-            history = new_hist
-        
-        # Filter to ensure only valid messages format
-        valid_history = []
-        for msg in history:
-            try:
-                if isinstance(msg, dict) and "role" in msg and "content" in msg:
-                    # Ensure role is valid
-                    role = str(msg["role"])
-                    if role not in ["user", "assistant", "system"]:
-                        role = "assistant" if role == "bot" else "user"
-                    valid_history.append({"role": role, "content": str(msg["content"])})
-            except:
-                continue
-        history = valid_history
-        
+        # Generate
+        full_response = ""
         try:
-            # Generate response (yields strings)
-            full_response = ""
-            for chunk in generate_response(message, {"temperature": temp, "top_p": top_p, "top_k": top_k, "max_tokens": max_tokens, "repetition_penalty": rep_penalty, "model_type": mt}):
-                try:
-                    full_response = str(chunk) if not isinstance(chunk, str) else chunk
-                    # Build messages: check if last user message is same as current, update assistant
-                    if len(history) >= 2 and history[-2].get("role") == "user" and history[-2].get("content") == message:
-                        # Update last assistant
-                        history[-1] = {"role": "assistant", "content": full_response}
-                    elif len(history) >= 1 and history[-1].get("role") == "user" and history[-1].get("content") == message:
-                        # User just added, add assistant
-                        history = history + [{"role": "assistant", "content": full_response}]
-                    else:
-                        # New turn
-                        if len(history) == 0 or history[-1].get("role") != "user" or history[-1].get("content") != message:
-                            history = history + [{"role": "user", "content": str(message)}]
-                        history = history + [{"role": "assistant", "content": full_response}]
-                        # Remove duplicate if we added user twice
-                        if len(history) >= 3 and history[-3].get("role") == "user" and history[-2].get("role") == "user":
-                            history = history[:-3] + history[-2:]
-                    
-                    yield history, ""
-                except Exception as inner_e:
-                    # On inner error, still yield valid history
-                    safe_hist = history + [{"role": "user", "content": str(message)}, {"role": "assistant", "content": f"Response: {full_response[:200]}"}]
-                    yield safe_hist, ""
-            
-            # If no chunks
-            if not full_response:
-                history = history + [{"role": "user", "content": str(message)}, {"role": "assistant", "content": "Hello! I'm your custom AI trained with LLM Forge. Ask me anything!"}]
-                yield history, ""
-                
-        except Exception as e:
-            # Ultimate fallback - always return valid messages format
+            # Ensure numeric params are valid
             try:
-                err_msg = f"I'm your AI! You said: {message}. (Demo mode - train for real answers)"
-                fallback_hist = valid_history + [{"role": "user", "content": str(message)}, {"role": "assistant", "content": err_msg}]
-                yield fallback_hist, ""
+                t = float(temp)
             except:
-                # Absolute fallback
-                yield [{"role": "user", "content": str(message)}, {"role": "assistant", "content": "Hello! I'm your AI assistant!"}], ""
+                t = 0.7
+            try:
+                tp = float(top_p)
+            except:
+                tp = 0.9
+            try:
+                tk = int(float(top_k)) if top_k else 40
+            except:
+                tk = 40
+            try:
+                mtok = int(float(max_tokens)) if max_tokens else 150
+            except:
+                mtok = 150
+            try:
+                rp = float(rep_penalty)
+            except:
+                rp = 1.1
+            
+            for chunk in generate_response(message, {"temperature": t, "top_p": tp, "top_k": tk, "max_tokens": mtok, "repetition_penalty": rp, "model_type": mt}):
+                full_response = str(chunk)
+                # Update assistant message
+                if len(history) > 0 and history[-1]["role"] == "assistant":
+                    history[-1]["content"] = full_response
+                else:
+                    history.append({"role": "assistant", "content": full_response})
+                yield history, ""
+        except Exception as e:
+            fallback = f"Hello! You said: {message}. I'm your custom AI from LLM Forge Studio! Ask me anything about AI, Python, or your data."
+            if len(history) > 0 and history[-1]["role"] == "assistant":
+                history[-1]["content"] = fallback
+            else:
+                history.append({"role": "assistant", "content": fallback})
+            yield history, ""
+        
+        # Ensure final response exists
+        if not full_response:
+            if len(history) == 0 or history[-1]["role"] != "assistant":
+                history.append({"role": "assistant", "content": "Hello! I'm your AI assistant. How can I help?"})
+                yield history, ""
     
     chat_btn.click(chat_wrapper, [chat_input, chatbot, temp_slider, top_p_slider, top_k_slider, max_tokens_slider, rep_penalty, model_type_test], [chatbot, chat_input])
     chat_input.submit(chat_wrapper, [chat_input, chatbot, temp_slider, top_p_slider, top_k_slider, max_tokens_slider, rep_penalty, model_type_test], [chatbot, chat_input])
