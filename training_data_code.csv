@@ -1,0 +1,11 @@
+instruction,output
+"Write Python function to add two numbers","def add(a, b):\n    return a + b\n\n# Example:\n# add(2, 3) returns 5"
+"Write Python function to check if number is even","def is_even(n):\n    return n % 2 == 0\n\n# Example:\n# is_even(4) returns True\n# is_even(5) returns False"
+"Write Python function to reverse string","def reverse_string(s):\n    return s[::-1]\n\n# Example:\n# reverse_string('hello') returns 'olleh'"
+"Explain what is API","API stands for Application Programming Interface. It allows different software to talk to each other. Example: Weather API lets your app get weather data from weather service."
+"Write JavaScript function to add numbers","function add(a, b) {\n    return a + b;\n}\n\n// Example:\n// add(2, 3) returns 5"
+"How to make HTTP request in Python?","import requests\nresponse = requests.get('https://api.github.com')\nprint(response.json())\n# Gets data from GitHub API"
+"What is Git?","Git is version control system to track code changes. Commands: git clone (download), git add (stage), git commit (save), git push (upload to GitHub)."
+"Write Python class for Car","class Car:\n    def __init__(self, brand, model):\n        self.brand = brand\n        self.model = model\n    def start(self):\n        return f\"{self.brand} {self.model} started!\"\n\n# Example:\n# my_car = Car('Toyota', 'Corolla')\n# my_car.start()"
+"Explain LLM Forge training code","from backend.trainer import train_model\nconfig = {'model_id': 'Qwen/Qwen2-0.5B-Instruct', 'epochs': 2, 'batch_size': 4}\nfor update in train_model(config, 'sample_data.csv'):\n    print(f\"Step {update['step']} Loss: {update['metrics']['train_loss']}\")\n# Trains your AI model!"
+"How to use Ollama?","# Install: curl -fsSL https://ollama.com/install.sh | sh\n# Create: ollama create my-ai -f ./exports/Modelfile\n# Run: ollama run my-ai\n# Now chat with your local AI!"
