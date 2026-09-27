@@ -362,7 +362,7 @@ def load_results():
         return f"<div class='card'>❌ Error: {e}</div>", pd.DataFrame([{"step":0,"loss":0,"type":"train"}]), str(e), str(e)
 
 # === UI - SUPER USER-FRIENDLY ===
-with gr.Blocks(css=CSS, theme=gr.themes.Monochrome(), title="LLM Forge - Easy LLM Builder") as app:
+with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
     dataset_path = gr.State(None)
     
     # Header
@@ -650,7 +650,7 @@ with gr.Blocks(css=CSS, theme=gr.themes.Monochrome(), title="LLM Forge - Easy LL
                 with gr.Column(scale=2):
                     gr.Markdown("### 💬 Chat With Your Custom AI!")
                     gr.HTML("<div style='font-size: 13px; color: #a1a1aa; margin-bottom: 12px;'>Your AI is ready! Ask it anything. This is YOUR AI trained on YOUR data!</div>")
-                    chatbot = gr.Chatbot(label="Your AI Chat", height=400, show_copy_button=True)
+                    chatbot = gr.Chatbot(label="Your AI Chat", height=400)
                     chat_input = gr.Textbox(label="💬 Type your message here", placeholder="e.g., Explain QLoRA in simple words", lines=2)
                     with gr.Row():
                         chat_btn = gr.Button("💬 Send Message", variant="primary")
@@ -873,4 +873,4 @@ if __name__ == "__main__":
     print(f"🌐 {'Colab - Public link' if is_colab() else 'Local - http://localhost:7860'}")
     print("⚡ 93% VRAM saved, 1.6x faster, +6% quality, 0% data loss - Super easy!")
     print("👋 Welcome tab has 3-step guide for beginners!")
-    app.launch(server_name="0.0.0.0", server_port=7860, share=is_colab(), show_error=True)
+    app.launch(server_name="0.0.0.0", server_port=7860, share=is_colab(), show_error=True, theme=gr.themes.Monochrome(), css=CSS)
