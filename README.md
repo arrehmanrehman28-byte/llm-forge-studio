@@ -12,17 +12,17 @@
 </p>
 
 <p align="center">
-  <a href="https://colab.research.google.com/github/yourusername/llm-forge-studio/blob/main/colab.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" /></a>
-  <a href="https://github.com/yourusername/llm-forge-studio"><img src="https://img.shields.io/badge/Open%20in-GitHub-black?style=for-the-badge&logo=github" /></a>
-  <a href="https://huggingface.co/spaces/yourusername/llm-forge-studio"><img src="https://img.shields.io/badge/🤗%20Open%20in-HF%20Spaces-blue?style=for-the-badge" /></a>
+  <a href="https://colab.research.google.com/github/arrehmanrehman28-byte/llm-forge-studio/blob/main/colab.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" /></a>
+  <a href="https://github.com/arrehmanrehman28-byte/llm-forge-studio"><img src="https://img.shields.io/badge/Open%20in-GitHub-black?style=for-the-badge&logo=github" /></a>
+  <a href="https://huggingface.co/spaces/arrehmanrehman28-byte/llm-forge-studio"><img src="https://img.shields.io/badge/🤗%20Open%20in-HF%20Spaces-blue?style=for-the-badge" /></a>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/github/stars/yourusername/llm-forge-studio?style=social" />
-  <img src="https://img.shields.io/github/forks/yourusername/llm-forge-studio?style=social" />
-  <img src="https://img.shields.io/github/issues/yourusername/llm-forge-studio" />
-  <img src="https://img.shields.io/github/last-commit/yourusername/llm-forge-studio" />
-  <a href="https://github.com/yourusername/llm-forge-studio/actions"><img src="https://github.com/yourusername/llm-forge-studio/workflows/CI/badge.svg" /></a>
+  <img src="https://img.shields.io/github/stars/arrehmanrehman28-byte/llm-forge-studio?style=social" />
+  <img src="https://img.shields.io/github/forks/arrehmanrehman28-byte/llm-forge-studio?style=social" />
+  <img src="https://img.shields.io/github/issues/arrehmanrehman28-byte/llm-forge-studio" />
+  <img src="https://img.shields.io/github/last-commit/arrehmanrehman28-byte/llm-forge-studio" />
+  <a href="https://github.com/arrehmanrehman28-byte/llm-forge-studio/actions"><img src="https://github.com/arrehmanrehman28-byte/llm-forge-studio/workflows/CI/badge.svg" /></a>
 </p>
 
 <p align="center">
@@ -36,7 +36,7 @@
 
 ```bash
 # Clone & Run - That's it!
-git clone https://github.com/yourusername/llm-forge-studio.git
+git clone https://github.com/arrehmanrehman28-byte/llm-forge-studio.git
 cd llm-forge-studio
 pip install -r requirements.txt
 python app.py  # Open http://localhost:7860
@@ -52,7 +52,7 @@ python app.py  # Open http://localhost:7860
 
 ### 🔥 One-Click Colab (Free T4 GPU!)
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/yourusername/llm-forge-studio/blob/main/colab.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/arrehmanrehman28-byte/llm-forge-studio/blob/main/colab.ipynb)
 
 ```python
 # In Colab - 3 clicks!
@@ -132,7 +132,7 @@ python app.py  # Open http://localhost:7860
 ### Option 1: Local (Recommended)
 
 ```bash
-git clone https://github.com/yourusername/llm-forge-studio.git
+git clone https://github.com/arrehmanrehman28-byte/llm-forge-studio.git
 cd llm-forge-studio
 
 # Create venv (optional but recommended)
@@ -341,7 +341,7 @@ If this helped you build your LLM, please star! ⭐
 
 <p align="center">
   <b>Built with ❤️ for No-Code AI Builders</b><br>
-  <a href="https://github.com/yourusername/llm-forge-studio">GitHub</a> • 
-  <a href="https://github.com/yourusername/llm-forge-studio/issues">Issues</a> • 
+  <a href="https://github.com/arrehmanrehman28-byte/llm-forge-studio">GitHub</a> • 
+  <a href="https://github.com/arrehmanrehman28-byte/llm-forge-studio/issues">Issues</a> • 
   <a href="docs/USER_GUIDE.md">Docs</a>
 </p>

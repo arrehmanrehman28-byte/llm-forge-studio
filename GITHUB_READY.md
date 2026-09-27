@@ -105,7 +105,7 @@ cd /home/user/llm-forge
 git init
 git add .
 git commit -m "feat: LLM Forge Studio v1.0 - Ultra efficient (93% VRAM saved, +6% quality, 0% data loss) - GitHub + Colab ready"
-git remote add origin https://github.com/yourusername/llm-forge-studio.git
+git remote add origin https://github.com/arrehmanrehman28-byte/llm-forge-studio.git
 git branch -M main
 git push -u origin main
 ```

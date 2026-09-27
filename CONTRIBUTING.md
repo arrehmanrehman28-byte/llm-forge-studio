@@ -7,7 +7,7 @@ Thank you for your interest in contributing! 🎉
 1. **Fork** the repo
 2. **Clone** your fork:
    ```bash
-   git clone https://github.com/yourusername/llm-forge-studio.git
+   git clone https://github.com/arrehmanrehman28-byte/llm-forge-studio.git
    cd llm-forge-studio
    ```
 3. **Create branch**:
