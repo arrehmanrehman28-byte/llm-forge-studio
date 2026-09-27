@@ -170,6 +170,18 @@ def load_sample_data():
     df, msg = load_dataset_auto(sample_path, None, 0.2)
     return df.head(20), f"✅ Sample data loaded! 6 examples ready.\n\n🎉 Perfect for beginners! Now go to Train tab → Click START TRAINING (works on any computer!)", "", sample_path
 
+def parse_lr(val):
+    """Fix: handle '2e-4 - Faster (Recommended)' -> 2e-4"""
+    try:
+        return float(val)
+    except:
+        try:
+            # Split by ' - ' and take first part, e.g., '2e-4 - Faster' -> '2e-4'
+            s = str(val).split(' - ')[0].strip().split()[0]
+            return float(s)
+        except:
+            return 2e-4  # safe default
+
 def training_flow(model_choice, custom_id, task, dataset_path, epochs, batch, grad_accum, lr, lora_r, use_lora, use_qlora, use_dora, use_neftune, use_packing, use_flash, use_checkpoint):
     mid = custom_id.strip() if clean_id(model_choice) == "custom" else clean_id(model_choice)
     if not mid or mid == "custom":
@@ -179,9 +191,12 @@ def training_flow(model_choice, custom_id, task, dataset_path, epochs, batch, gr
         yield "❌ Please load data in Data tab first! Click 'Use Sample Data' for instant demo.", None, "❌ No data", gpu_html(), "<div>Data: 0%</div>", "<div>Results: Load data first</div>", "Load data", "<div>Efficiency: Load data</div>"
         return
     
+    # Fix learning rate parsing: '2e-4 - Faster (Recommended)' -> 2e-4
+    lr_val = parse_lr(lr)
+    
     config = {
         "model_id": mid, "task": task, "epochs": int(epochs), "batch_size": int(batch),
-        "grad_accum": int(grad_accum), "lr": float(lr), "lora_r": int(lora_r), "lora_alpha": 32,
+        "grad_accum": int(grad_accum), "lr": lr_val, "lora_r": int(lora_r), "lora_alpha": 32,
         "lora_dropout": 0.05, "use_lora": use_lora, "use_qlora": use_qlora,
         "dora": use_dora, "neftune": use_neftune, "packing": use_packing,
         "use_flash": use_flash, "gradient_checkpointing": use_checkpoint,
@@ -763,8 +778,13 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
         arch_id = arch.split(" - ")[0] if " - " in arch else arch
         info = get_arch_info(arch_id)
         return f"<div class='card'><b>🧬 {arch_id} - {info['params']}</b><br>Layers: {info['layers']} | Hidden: {info['hidden']} | Heads: {info['heads']} | Vocab: {info['vocab']}<br>{info['desc']}</div>"
+    def safe_float(x, default=2e-4):
+        try: return float(x)
+        except:
+            try: return float(str(x).split(' - ')[0].strip().split()[0])
+            except: return default
     scratch_arch.change(on_scratch_change, [scratch_arch], [scratch_arch_info])
-    scratch_train_btn.click(lambda *args: list(train_from_scratch({"model_name": args[0], "architecture": args[1].split(' - ')[0], "num_layers": int(args[2]), "hidden_size": int(args[3]), "num_heads": int(args[4]), "intermediate_size": int(args[5]), "vocab_size": int(args[6]), "context_length": int(args[7]), "tokenizer_type": args[8].split(' - ')[0], "train_tokenizer": args[9], "epochs": int(args[11]), "batch_size": int(args[12]), "lr": float(args[13].split(' - ')[0])}, args[10]))[-1], [scratch_model_name, scratch_arch, scratch_layers, scratch_hidden, scratch_heads, scratch_inter, scratch_vocab, scratch_context, scratch_tok_type, scratch_train_tok, dataset_path, scratch_epochs, scratch_batch, scratch_lr], [scratch_logs])
+    scratch_train_btn.click(lambda *args: list(train_from_scratch({"model_name": args[0], "architecture": args[1].split(' - ')[0], "num_layers": int(args[2]), "hidden_size": int(args[3]), "num_heads": int(args[4]), "intermediate_size": int(args[5]), "vocab_size": int(args[6]), "context_length": int(args[7]), "tokenizer_type": args[8].split(' - ')[0], "train_tokenizer": args[9], "epochs": int(args[11]), "batch_size": int(args[12]), "lr": safe_float(args[13])}, args[10]))[-1], [scratch_model_name, scratch_arch, scratch_layers, scratch_hidden, scratch_heads, scratch_inter, scratch_vocab, scratch_context, scratch_tok_type, scratch_train_tok, dataset_path, scratch_epochs, scratch_batch, scratch_lr], [scratch_logs])
     
     # Data events - Super simple
     load_data_btn.click(load_data, [file_upload, hf_dataset_input, split_slider], [data_preview, data_status, data_code, dataset_path])
