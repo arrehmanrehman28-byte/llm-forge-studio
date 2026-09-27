@@ -1,0 +1,28 @@
+This is example text data for training LLM from scratch in LLM Forge Studio.
+
+You can use this file for From Scratch training - Create brand new AI from zero!
+
+LLM Forge Studio is a no-code tool to build your own AI models. You can fine-tune existing models like Qwen 0.5B or create new models from scratch like tiny-10M.
+
+Fine-tuning is when you take existing AI that already knows a lot and teach it your data. It is fast and needs little data. For example, Qwen 0.5B trains in 5 minutes on Colab Free T4 GPU with only 6 examples!
+
+From scratch is when you create brand new AI from zero with only your data. It needs more data and time. Models like tiny-10M have 10M parameters and train in 10 minutes on T4, small-50M has 50M parameters and 8 hours, base-124M has 124M parameters like GPT-2.
+
+QLoRA is efficient fine-tuning that uses 4-bit quantization to save 93% VRAM. You can train 7B model on 8GB VRAM like Colab Free T4! Normally 7B needs 28GB VRAM, but with QLoRA needs only 6GB.
+
+Packing packs multiple short examples into one long sequence instead of padding with zeros. Normally padding wastes 50% of data, but packing gives 100% utilization and 2x faster training! Always enable packing for minimal data loss.
+
+DoRA is Weight-Decomposed Low-Rank Adaptation - better LoRA that gives +2-3% quality boost. NEFTune adds noise to embeddings during training - +2% quality for small data and prevents overfitting. Both are checked by default in LLM Forge Studio for free quality boost!
+
+Training settings: Epochs is how many times AI reads your data. 1-2 epochs for demo (5 mins), 3-5 for better quality (15-30 mins). Batch size is how many examples at once. 4 for T4 GPU, 1 for CPU. Learning rate is how fast AI learns. 3e-4 is balanced and recommended.
+
+After training, you can test your AI in Test tab by chatting, and export in Export tab to GGUF Q4 for Ollama (0.6GB) or SafeTensors for HuggingFace. Then use with Ollama locally: ollama create my-ai -f ./exports/Modelfile, ollama run my-ai, now chat with your own AI!
+
+This text file can be used for from-scratch training. Just upload it in Data tab and choose From Scratch model like tiny-10M. The AI will learn from this text and be able to generate similar text!
+
+For better results, add more text - 1000+ lines of your own data. For example, if you want Urdu chatbot, add Urdu text. If you want code assistant, add code examples. If you want story writer, add stories.
+
+The possibilities are endless! Start with Qwen 0.5B + sample data (5 mins) then make your own AI with your own data!
+
+GitHub: https://github.com/arrehmanrehman28-byte/llm-forge-studio
+Colab: https://colab.research.google.com/github/arrehmanrehman28-byte/llm-forge-studio/blob/main/colab.ipynb
