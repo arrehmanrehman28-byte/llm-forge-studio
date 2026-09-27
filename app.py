@@ -659,13 +659,13 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
                         results_json = gr.Code(language="json", label="results.json")
                         history_json = gr.Code(language="json", label="First 5 steps of training history")
         
-        # Test - Simple chat
+        # Test - Simple chat - FIXED for Gradio 6: messages format
         with gr.Tab("💬 Step 5: Chat With Your AI!"):
             with gr.Row():
                 with gr.Column(scale=2):
                     gr.Markdown("### 💬 Chat With Your Custom AI!")
                     gr.HTML("<div style='font-size: 13px; color: #a1a1aa; margin-bottom: 12px;'>Your AI is ready! Ask it anything. This is YOUR AI trained on YOUR data!</div>")
-                    chatbot = gr.Chatbot(label="Your AI Chat", height=400)
+                    chatbot = gr.Chatbot(label="Your AI Chat", height=400, type="messages")
                     chat_input = gr.Textbox(label="💬 Type your message here", placeholder="e.g., Explain QLoRA in simple words", lines=2)
                     with gr.Row():
                         chat_btn = gr.Button("💬 Send Message", variant="primary")
@@ -764,20 +764,25 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
 
     # === EVENTS - Simple and robust ===
     def on_model_change(choice, custom_id, task):
-        html = model_html(choice, custom_id, task)
-        mid = clean_id(choice) if clean_id(choice) != "custom" else custom_id
-        code = generate_maker_code(mid, task)
-        return html, code
+        try:
+            html = model_html(choice, custom_id, task)
+            mid = clean_id(choice) if clean_id(choice) != "custom" else custom_id
+            code = generate_maker_code(mid, task)
+            return html, code
+        except Exception as e:
+            return f"<div class='card'>❌ Error: {str(e)[:200]}</div>", f"# Error: {e}"
     model_dropdown.change(on_model_change, [model_dropdown, custom_model_id, task_dropdown], [model_info, maker_code])
     custom_model_id.change(on_model_change, [model_dropdown, custom_model_id, task_dropdown], [model_info, maker_code])
     task_dropdown.change(on_model_change, [model_dropdown, custom_model_id, task_dropdown], [model_info, maker_code])
     generate_maker_code_btn.click(on_model_change, [model_dropdown, custom_model_id, task_dropdown], [model_info, maker_code])
     
     def on_scratch_change(arch):
-        # Extract arch id from friendly name
-        arch_id = arch.split(" - ")[0] if " - " in arch else arch
-        info = get_arch_info(arch_id)
-        return f"<div class='card'><b>🧬 {arch_id} - {info['params']}</b><br>Layers: {info['layers']} | Hidden: {info['hidden']} | Heads: {info['heads']} | Vocab: {info['vocab']}<br>{info['desc']}</div>"
+        try:
+            arch_id = arch.split(" - ")[0] if " - " in arch else arch
+            info = get_arch_info(arch_id)
+            return f"<div class='card'><b>🧬 {arch_id} - {info['params']}</b><br>Layers: {info['layers']} | Hidden: {info['hidden']} | Heads: {info['heads']} | Vocab: {info['vocab']}<br>{info['desc']}</div>"
+        except Exception as e:
+            return f"<div class='card'>❌ Error: {str(e)[:200]}</div>"
     def safe_float(x, default=2e-4):
         try: return float(x)
         except:
@@ -803,7 +808,7 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
     
     refresh_results_btn.click(load_results, [], [results_display, results_plot, results_json, history_json])
     
-    # Test events - FIXED: too many values to unpack (expected 2)
+    # Test events - FIXED for Gradio 6: messages format, not tuples
     def chat_wrapper(message, history, temp, top_p, top_k, max_tokens, rep_penalty, model_type):
         # Clean model type
         mt = model_type.split(" ")[1] if " " in model_type else model_type
@@ -814,25 +819,47 @@ with gr.Blocks(title="LLM Forge - Easy LLM Builder") as app:
             for chunk in generate_response(message, {"temperature": temp, "top_p": top_p, "top_k": top_k, "max_tokens": max_tokens, "repetition_penalty": rep_penalty, "model_type": mt}):
                 # chunk is cumulative string like "Hello world "
                 full_response = chunk if isinstance(chunk, str) else str(chunk)
-                # Build history: list of (user, bot) tuples
-                if history and len(history) > 0 and history[-1][0] == message:
-                    history[-1] = (message, full_response)
+                # Gradio 6: messages format [{"role": "user", "content": ...}, {"role": "assistant", ...}]
+                # Build history in messages format
+                if history and len(history) >= 2 and history[-2].get("role") == "user" and history[-2].get("content") == message:
+                    # Update last assistant message
+                    history[-1] = {"role": "assistant", "content": full_response}
                 else:
-                    # New conversation turn
-                    if len(history) == 0 or history[-1][0] != message:
-                        history = history + [(message, full_response)]
+                    # New turn: user + assistant
+                    if len(history) == 0 or history[-1].get("role") != "assistant" or (len(history) >= 2 and history[-2].get("content") != message):
+                        # Add user message if not already there
+                        if len(history) == 0 or history[-1].get("content") != message or history[-1].get("role") != "user":
+                            # Check if last is already user with same content
+                            if not (len(history) > 0 and history[-1].get("role") == "user" and history[-1].get("content") == message):
+                                history = history + [{"role": "user", "content": message}]
+                        # Add/update assistant
+                        if len(history) > 0 and history[-1].get("role") == "assistant":
+                            history[-1] = {"role": "assistant", "content": full_response}
+                        else:
+                            history = history + [{"role": "assistant", "content": full_response}]
                     else:
-                        history[-1] = (message, full_response)
+                        history[-1] = {"role": "assistant", "content": full_response}
                 yield history, ""
             # If no chunks, fallback
             if not full_response:
                 fallback = "Hello! I'm your custom AI trained with LLM Forge. Ask me anything about AI, Python, or your data!"
-                history = history + [(message, fallback)]
+                history = history + [{"role": "user", "content": message}, {"role": "assistant", "content": fallback}]
                 yield history, ""
         except Exception as e:
-            # Safe fallback - never crash chat
-            err_msg = f"I'm your custom AI! You said: {message}. (Demo response - train model for real answers)"
-            history = history + [(message, err_msg)]
+            # Safe fallback - never crash chat, Gradio 6 messages format
+            err_msg = f"I'm your custom AI! You said: {message}. (Demo response - train model for real answers) Error: {str(e)[:100]}"
+            # Ensure history is messages format
+            if history and len(history) > 0 and isinstance(history[0], (list, tuple)):
+                # Convert old tuple format to messages if needed
+                new_hist = []
+                for item in history:
+                    if isinstance(item, (list, tuple)) and len(item) == 2:
+                        new_hist.append({"role": "user", "content": str(item[0])})
+                        new_hist.append({"role": "assistant", "content": str(item[1])})
+                    elif isinstance(item, dict):
+                        new_hist.append(item)
+                history = new_hist
+            history = history + [{"role": "user", "content": message}, {"role": "assistant", "content": err_msg}]
             yield history, ""
     
     chat_btn.click(chat_wrapper, [chat_input, chatbot, temp_slider, top_p_slider, top_k_slider, max_tokens_slider, rep_penalty, model_type_test], [chatbot, chat_input])
